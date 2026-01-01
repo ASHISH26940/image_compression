@@ -71,7 +71,31 @@ impl JpegWriter {
         self.write_u8(0);
     }
 
-    /// Write standard JPEG Huffman tables (ITU-T T.81 Annex K)
+    /// SOF0 for COLOR (3 components: Y, Cb, Cr)
+    pub fn write_sof0_color(&mut self, width: u16, height: u16) {
+        self.write_marker(Marker::SOF0);
+        self.write_u16(17); // Length for 3 components
+        self.write_u8(8);   // Precision
+        self.write_u16(height);
+        self.write_u16(width);
+        self.write_u8(3);   // 3 components
+        
+        // Y component
+        self.write_u8(1);    // Component ID
+        self.write_u8(0x11); // Sampling (1x1, no subsampling)
+        self.write_u8(0);    // Quantization table 0
+        
+        // Cb component
+        self.write_u8(2);    // Component ID
+        self.write_u8(0x11); // Sampling (1x1)
+        self.write_u8(1);    // Quantization table 1
+        
+        // Cr component
+        self.write_u8(3);    // Component ID
+        self.write_u8(0x11); // Sampling (1x1)
+        self.write_u8(1);    // Quantization table 1
+    }
+
     pub fn write_dht_standard(&mut self) {
         // DC Luminance (Table K.3)
         self.write_marker(Marker::DHT);
@@ -112,6 +136,20 @@ impl JpegWriter {
         self.write_u8(0x10); // AC table 0
         self.write_bytes(&ac_luma_bits);
         self.write_bytes(&ac_luma_vals);
+
+        // DC Chrominance (same as luma for simplicity)
+        self.write_marker(Marker::DHT);
+        self.write_u16(19 + 12);
+        self.write_u8(0x01); // DC table 1
+        self.write_bytes(&dc_luma_bits);
+        self.write_bytes(&dc_luma_vals);
+
+        // AC Chrominance (same as luma for simplicity)
+        self.write_marker(Marker::DHT);
+        self.write_u16(19 + 162);
+        self.write_u8(0x11); // AC table 1
+        self.write_bytes(&ac_luma_bits);
+        self.write_bytes(&ac_luma_vals);
     }
 
     pub fn write_sos_grayscale(&mut self) {
@@ -127,6 +165,29 @@ impl JpegWriter {
         self.write_u8(0);
     }
 
+    /// SOS for COLOR (3 components)
+    pub fn write_sos_color(&mut self) {
+        self.write_marker(Marker::SOS);
+        self.write_u16(12); // Length
+        self.write_u8(3);   // 3 components
+        
+        // Y component
+        self.write_u8(1);    // Component ID
+        self.write_u8(0x00); // DC table 0, AC table 0
+        
+        // Cb component
+        self.write_u8(2);    // Component ID
+        self.write_u8(0x11); // DC table 1, AC table 1
+        
+        // Cr component
+        self.write_u8(3);    // Component ID
+        self.write_u8(0x11); // DC table 1, AC table 1
+        
+        self.write_u8(0);   // Start of spectral selection
+        self.write_u8(63);  // End of spectral selection
+        self.write_u8(0);   // Successive approximation
+    }
+
     pub fn write_scan_data(&mut self, data: &[u8]) {
         self.write_bytes(data);
     }
@@ -140,8 +201,19 @@ impl JpegWriter {
         self.write_app0();
         self.write_dqt(0, &STANDARD_LUMA_QTABLE);
         self.write_sof0_grayscale(width, height);
-        self.write_dht_standard(); // ✓ Now uses correct tables
+        self.write_dht_standard();
         self.write_sos_grayscale();
+    }
+
+    /// Write headers for COLOR JPEG
+    pub fn write_headers_color(&mut self, width: u16, height: u16) {
+        self.write_soi();
+        self.write_app0();
+        self.write_dqt(0, &STANDARD_LUMA_QTABLE);
+        self.write_dqt(1, &STANDARD_CHROMA_QTABLE);
+        self.write_sof0_color(width, height);
+        self.write_dht_standard();
+        self.write_sos_color();
     }
 
     pub fn finish(self) -> Vec<u8> {

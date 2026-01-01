@@ -149,10 +149,11 @@ impl BitWriter {
     }
 }
 
-pub fn encode_dc(writer: &mut BitWriter, diff: i32, _is_chroma: bool) {
+pub fn encode_dc(writer: &mut BitWriter, diff: i32, is_chroma: bool) {
     let size = get_size_category(diff);
     let amplitude = get_amplitude_bits(diff, size);
     
+    // For now, use same table for luma and chroma
     let code = DC_LUMA_CODES[size as usize];
     writer.write_bits(code.code, code.length);
     
@@ -166,6 +167,7 @@ pub fn encode_ac(writer: &mut BitWriter, symbols: &[RLESymbol]) {
         let size = get_size_category(symbol.value);
         let amplitude = get_amplitude_bits(symbol.value, size);
         
+        // Use same AC table for all channels
         let code = get_ac_code(symbol.run_length, size);
         writer.write_bits(code.code, code.length);
         

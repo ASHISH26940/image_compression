@@ -1,19 +1,17 @@
-//! JPEG Encoder Library
-//! 
-//! A from-scratch implementation of baseline JPEG compression.
+//! JPEG and PNG encoder library
 
 pub mod color;
-pub mod transform;
-pub mod quantization;
 pub mod entropy;
 pub mod format;
+pub mod quantization;
+pub mod transform;
 pub mod encoder;
-// pub mod format;  // Uncomment when implemented
-// pub mod encoder; // Uncomment when implemented
+pub mod png;
 
-// Re-export commonly used items
-pub use color::{rgb_to_ycbcr, YCbCr};
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;  // WASM bindings
+
 pub use encoder::JpegEncoder;
+pub use png::PngEncoder;
 
-/// Library version
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = "0.1.0";
