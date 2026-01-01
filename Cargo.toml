@@ -1,0 +1,20 @@
+[package]
+name = "jpeg_encoder"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "jpeg_encoder"
+path = "src/lib.rs"
+
+[[bin]]
+name = "jpeg_encoder_cli"
+path = "src/main.rs"
+
+[dependencies]
+# Add dependencies as needed, e.g.:
+image = "0.24"  # For loading test images
+lazy_static = "1.4"
+
+[dev-dependencies]
+# For testing
